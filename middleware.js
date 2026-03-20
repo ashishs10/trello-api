@@ -3,18 +3,26 @@ const jwt = require("jsonwebtoken");
 function authMiddleware(req, res, next) {
   const token = req.headers.token;
 
+  if (!token) {
+    res.status(403).json({
+      message: "Token not given",
+    });
+  }
+
   const decoded = jwt.verify(token, "ashishiscool123");
 
-  const userId = decoded.userId;
+  const username = decoded.username;
 
-  if (userId) {
-    req.userId = userId;
+  if (username) {
+    req.username = username;
     next();
   } else {
     res.status(403).json({
       message: "Auth token incorrect",
     });
   }
+
+  next();
 }
 
 module.exports = {

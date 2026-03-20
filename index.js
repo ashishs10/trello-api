@@ -1,10 +1,11 @@
 const express = require("express");
+const jwt = require("jsonwebtoken");
 const { authMiddleware } = require("./middleware");
 
 let USERS_ID = 1;
 let ORGANISATION_ID = 1;
 
-const users = [
+const USERS = [
   {
     id: 1,
     username: "harkirat", // uniquenss constraint
@@ -67,19 +68,24 @@ app.post("/signup", (req, res) => {
   const username = req.body.username;
   const password = req.body.password;
 
-  const userExists = users.find((user) => user.username === username);
+  const userExists = USERS.find((user) => user.username === username);
 
   if (userExists) {
-    req.status(411).json({
+    res.status(411).json({
       message: "User with this username already exists",
     });
     return;
   }
 
-  users.push({
+  USERS.push({
     username,
     password,
     id: USERS_ID++,
+  });
+
+  res.status(200).json({
+    mesasge: "User creatd",
+    username,
   });
 });
 
@@ -87,24 +93,53 @@ app.post("/signin", (req, res) => {
   const username = req.body.username;
   const password = req.body.password;
 
-  const userExists = users.find((user) => user.username === username);
+  const userExists = USERS.find((user) => user.username === username);
 
-  if (userExists && user) {
+  if (!userExists) {
+    res.status(403).json({
+      message: "incorrect credentials",
+    });
   }
+
+  // if user exists - sign jwt token
+  const token = jwt.sign(
+    {
+      username: username,
+    },
+    "ashishiscool123",
+  );
+  // return token
+  res.status(200).json({
+    token: token,
+  });
 });
 
 app.post("/organisation", authMiddleware, (req, res) => {
-  const userId = req.userId;
+  const username = req.username;
+
+  if (!username) {
+    res.status(403).json({
+      message: "Malformed token",
+    });
+  }
+
   organizations.push({
     id: ORGANISATION_ID++,
     title: req.body.title,
     description: req.body.description,
-    admin: userId,
+    admin: username,
     members: [],
+  });
+
+  res.status(200).json({
+    organizations,
   });
 });
 
-app.post("/add-member-to-organisation", authMiddleware, (req, res) => {});
+// AUTHENTICATED ROUTE-
+app.post("/add-member-to-organisation", authMiddleware, (req, res) => {
+  // CHECK IF THE HEADERS ARE CORRECT - USER FROM THE HEADER
+});
 
 app.post("/board", (req, res) => {});
 
