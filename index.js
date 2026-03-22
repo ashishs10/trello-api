@@ -4,6 +4,7 @@ const { authMiddleware } = require("./middleware");
 
 let USERS_ID = 1;
 let ORGANISATION_ID = 1;
+let BOARDS_ID = 1;
 
 const USERS = [
   {
@@ -189,7 +190,44 @@ app.post("/add-member-to-organisation", authMiddleware, (req, res) => {
   });
 });
 
-app.post("/board", authMiddleware, (req, res) => {});
+app.post("/board", authMiddleware, (req, res) => {
+  const title = req.body.title;
+  const organizationId = Number(req.body.organizationId);
+  const username = req.username;
+
+  const org = ORGANISATION.find((org) => org.id === organizationId);
+
+  if (!org) {
+    res.status(404).json({
+      message: "Organisation doesn't exist",
+    });
+    return;
+  }
+
+  // check if the user is admin
+  const user = USERS.find((user) => user.username === username);
+  const admin = user.id === org.admin;
+
+  if (!admin) {
+    res.status(403).json({
+      message: "Anauthorised to create boards",
+    });
+    return;
+  }
+
+  const board = {
+    id: BOARDS_ID++,
+    title,
+    organizationId,
+  };
+
+  BOARDS.push(board);
+
+  res.status(200).json({
+    message: "Board created",
+    board,
+  });
+});
 
 app.post("/issue", authMiddleware, (req, res) => {});
 
