@@ -5,6 +5,7 @@ const { authMiddleware } = require("./middleware");
 let USERS_ID = 1;
 let ORGANISATION_ID = 1;
 let BOARDS_ID = 1;
+let ISSUE_ID = 1;
 
 const USERS = [
   {
@@ -39,7 +40,7 @@ const ORGANISATION = [
 const BOARDS = [
   {
     id: 1,
-    title: "100xschool website (frontend",
+    title: "100xschool website (frontend)",
     organizationId: 1,
   },
 ];
@@ -229,10 +230,94 @@ app.post("/board", authMiddleware, (req, res) => {
   });
 });
 
-app.post("/issue", authMiddleware, (req, res) => {});
+app.post("/issue", authMiddleware, (req, res) => {
+  /* INPUT : req.body
+    title: "Add dark mode",
+    boardId: 1,
+    state: "IN_PROGRESS",
+    
+    token: username (middleware)
+
+    GUARD CLAUSES
+      1. Does the board exists.
+      2. is the user member or admin of the board
+      3. 
+
+    HAPPY PATH
+     1. Issue object 
+     {  title: "Add dark mode",
+        boardId: 1,
+        state: "IN_PROGRESS",
+      }
+    */
+  const title = req.body.title;
+  const boardId = Number(req.body.boardId);
+  const state = req.body.state;
+  const username = req.username; //from token
+
+  const board = BOARDS.find((board) => boardId === board.id);
+
+  if (!board) {
+    res.status(404).json({
+      message: "Board doens't exist",
+    });
+    return;
+  }
+
+  const user = USERS.find((user) => user.username === username);
+  const userId = user.id;
+
+  const organizationId = board.organizationId;
+
+  const org = ORGANISATION.find((org) => org.id === organizationId);
+
+  const isMemberOfOrg = org.members.includes(userId);
+  const admin = org.admin === userId;
+
+  if (!isMemberOfOrg && !admin) {
+    res.status(403).json({
+      message: "Anauthorised user",
+    });
+    return;
+  }
+
+  const issue = {
+    id: ISSUE_ID,
+    title,
+    boardId,
+    state,
+  };
+  ISSUES.push(issue);
+
+  res.status(200).json({
+    message: "Issue created succefully",
+  });
+  return;
+});
 
 // WRITE
-app.get("/boards", authMiddleware, (req, res) => {});
+app.get("/boards", authMiddleware, (req, res) => {
+  const username = req.username;
+
+  const user = USERS.find((user) => user.username === username);
+  const userId = user.id;
+
+  const userOrgs = ORGANISATION.filter(
+    (org) => org.members.includes(userId) || org.admin === userId,
+  );
+
+  const userOrgsIds = userOrgs.map((org) => org.id);
+
+  const boards = BOARDS.filter((board) =>
+    userOrgsIds.includes(board.organizationId),
+  );
+
+  res.status(200).json({
+    message: "boards fetched succesfully",
+    boards,
+  });
+  return;
+});
 
 // query params ?organisation
 app.get("/boards/:organisation", authMiddleware, (req, res) => {});
