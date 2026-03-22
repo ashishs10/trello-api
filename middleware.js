@@ -21,8 +21,6 @@ function authMiddleware(req, res, next) {
       message: "Auth token incorrect",
     });
   }
-
-  next();
 }
 
 module.exports = {

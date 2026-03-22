@@ -18,7 +18,7 @@ const USERS = [
   },
 ];
 
-const organizations = [
+const ORGANISATION = [
   {
     id: 1,
     title: "100xdevs",
@@ -35,7 +35,7 @@ const organizations = [
   },
 ];
 
-const boards = [
+const BOARDS = [
   {
     id: 1,
     title: "100xschool website (frontend",
@@ -43,7 +43,7 @@ const boards = [
   },
 ];
 
-const issues = [
+const ISSUES = [
   {
     id: 1,
     title: "Add dark mode",
@@ -123,7 +123,7 @@ app.post("/organisation", authMiddleware, (req, res) => {
     });
   }
 
-  organizations.push({
+  ORGANISATION.push({
     id: ORGANISATION_ID++,
     title: req.body.title,
     description: req.body.description,
@@ -132,33 +132,81 @@ app.post("/organisation", authMiddleware, (req, res) => {
   });
 
   res.status(200).json({
-    organizations,
+    ORGANISATION,
   });
 });
 
 // AUTHENTICATED ROUTE-
 app.post("/add-member-to-organisation", authMiddleware, (req, res) => {
-  // CHECK IF THE HEADERS ARE CORRECT - USER FROM THE HEADER
+  const organizationId = Number(req.body.organizationId);
+  const memberUsername = req.body.memberUsername;
+  const username = req.username;
+
+  // find if org exists
+  const org = ORGANISATION.find((org) => org.id === organizationId);
+  console.log(`Organisation exists ${org.id}`);
+
+  if (!org) {
+    res.status(403).json({
+      message: "Organisation doesn't exist",
+    });
+    return;
+  }
+
+  // USER IS ADMIN
+  const user = USERS.find((user) => user.username === username);
+
+  if (!user.id === org.admin) {
+    res.status(403).json({
+      message: "Unauthorised access",
+    });
+    return;
+  }
+  // ADD MEMBER USER TO ORGANISATION
+  const memberUser = USERS.find((user) => user.username === memberUsername);
+
+  if (!memberUser) {
+    res.status(404).json({
+      message: "Member user doesn't exist",
+    });
+    return;
+  }
+
+  const memberUserId = memberUser.id;
+
+  const memberInOrg = org.members.findIndex((id) => id === memberUserId);
+  if (memberInOrg !== -1) {
+    res.status(403).json({
+      message: "member already in organisation",
+    });
+    return;
+  }
+
+  org.members.push(memberUserId);
+
+  res.status(200).json({
+    message: "Added member to organisation",
+  });
 });
 
-app.post("/board", (req, res) => {});
+app.post("/board", authMiddleware, (req, res) => {});
 
-app.post("/issue", (req, res) => {});
+app.post("/issue", authMiddleware, (req, res) => {});
 
 // WRITE
-app.get("/boards", (req, res) => {});
+app.get("/boards", authMiddleware, (req, res) => {});
 
 // query params ?organisation
-app.get("/boards/:organisation", (req, res) => {});
+app.get("/boards/:organisation", authMiddleware, (req, res) => {});
 
-app.get("/issues", (req, res) => {});
+app.get("/issues", authMiddleware, (req, res) => {});
 
-app.get("/members", (req, res) => {});
+app.get("/members", authMiddleware, (req, res) => {});
 
 // query params
-app.get("/issues", (req, res) => {});
+app.get("/issues", authMiddleware, (req, res) => {});
 
 // DELETE
-app.delete("/members", (req, res) => {});
+app.delete("/members", authMiddleware, (req, res) => {});
 
 app.listen(3000);
