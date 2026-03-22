@@ -319,12 +319,106 @@ app.get("/boards", authMiddleware, (req, res) => {
   return;
 });
 
-// query params ?organisation
-app.get("/boards/:organisation", authMiddleware, (req, res) => {});
+// TODO : TOMORROW
+app.get("/issues", authMiddleware, (req, res) => {
+  /* 
+    Issues belong to particular organisation and board
+    req body won't have anything as it is a GET request - is this correct conceptually?
+    authmiddleware - username
 
-app.get("/issues", authMiddleware, (req, res) => {});
+    will have orgId in query params, 
+    without guery params -> give all the issues of the boards that the user is in. 
+    2nd one is more apt. 
 
-app.get("/members", authMiddleware, (req, res) => {});
+    1. find org for user
+    2. find board of the orgs
+    3. find the issues related to the boards of the org
+
+    GUARD CLAUSES
+    1. 
+  */
+
+  const username = req.username;
+
+  const user = USERS.find((user) => user.username === username);
+
+  const userId = user.id;
+
+  const isMemberOfOrg = org.members.includes(userId);
+  const admin = org.admin === userId;
+
+  if (!isMemberOfOrg && !admin) {
+    res.status(403).json({
+      message: "Anauthorised user",
+    });
+    return;
+  }
+
+  const board = BOARDS.find((board) => board.organizationId === org.id);
+
+  const issues = ISSUES.filter((issue) => issue.boardId === board.id);
+
+  res.status(200).json({
+    message: "success",
+    issues,
+  });
+});
+
+app.get("/members", authMiddleware, (req, res) => {
+  /* 
+    request body won't be there as this is a get request
+    query params - ?organisationid=3
+
+    token - username
+
+    GUARD CLAUSES
+     1. VALID QUERY PARAMS
+     2. VALID ORG
+     3. USER MEMBER OR ADMIN OF THE ORG
+
+  */
+
+  const username = req.username;
+
+  const organisationId = Number(req.query.organisationId);
+
+  if (!organisationId) {
+    res.status(404).json({
+      message: "Invalid query params",
+    });
+    return;
+  }
+
+  const org = ORGANISATION.find((org) => org.id === organisationId);
+
+  if (!org) {
+    res.status(404).json({
+      message: "Organisation doens't exists",
+    });
+    return;
+  }
+
+  const user = USERS.find((user) => user.username === username);
+  const isMember = org.members.includes(user.id);
+  const isAdmin = org.admin === user.id;
+
+  if (!isMember && !isAdmin) {
+    res.status(403).json({
+      message: "Unauthorised",
+    });
+    return;
+  }
+
+  const members = USERS.filter((user) => org.members.includes(user.id)).map(
+    (user) => ({ id: user.id, username: user.username }),
+  );
+
+  res.status(200).json({
+    message: "succes",
+    members,
+  });
+  return;
+});
 
 // query params
 app.get("/issues", authMiddleware, (req, res) => {});
