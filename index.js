@@ -344,19 +344,25 @@ app.get("/issues", authMiddleware, (req, res) => {
 
   const userId = user.id;
 
-  const isMemberOfOrg = org.members.includes(userId);
-  const admin = org.admin === userId;
+  const org = ORGANISATION.find(
+    (org) => org.members.includes(userId) || org.admin === userId,
+  );
 
-  if (!isMemberOfOrg && !admin) {
-    res.status(403).json({
-      message: "Anauthorised user",
+  if (!org) {
+    res.status(404).json({
+      message: "Member is not in any org",
     });
     return;
   }
 
-  const board = BOARDS.find((board) => board.organizationId === org.id);
+  const boards = BOARDS.filter((board) => board.organizationId === org.id);
 
-  const issues = ISSUES.filter((issue) => issue.boardId === board.id);
+  const issues = boards.map((board) => ({
+    boardId: board.id,
+    boardTitle: board.title,
+
+    issues: ISSUES.filter((issue) => issue.boardId === board.id),
+  }));
 
   res.status(200).json({
     message: "success",
